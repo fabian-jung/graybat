@@ -74,10 +74,10 @@ namespace graybat {
 	    template <typename T_Send>
 	    Event asyncSend(const VAddr destVAddr, const Tag tag, const Context context, const T_Send& sendData) = delete;
 
-            template <typename T_Recv>
+		template <typename T_Recv>
 	    void recv(const VAddr srcVAddr, const Tag tag, const Context context, T_Recv& recvData) = delete;
 
-            template <typename T_Recv>
+		template <typename T_Recv>
 	    Event recv(const Context context, T_Recv& recvData) = delete;
 
 	    template <typename T_Recv>

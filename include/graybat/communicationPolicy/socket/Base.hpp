@@ -681,10 +681,9 @@ namespace graybat {
                 using Message   = graybat::communicationPolicy::socket::Message<T_CommunicationPolicy>;
 
                 Message message(std::move(inBox.waitDequeue(msgType, context.getID(), srcVAddr, tag)));
-                memcpy (static_cast<void*>(recvData.data()),
-                        static_cast<std::int8_t*>(message.getData()),
-                        sizeof(typename T_Recv::value_type) * recvData.size());
-
+				
+				namespace traits = graybat::communicationPolicy::traits;
+				traits::unfoldMessage(recvData, message.getData(), message.size());
             }
 
 

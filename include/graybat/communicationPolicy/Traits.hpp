@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <vector>
+
 namespace graybat {
     
     namespace communicationPolicy {
@@ -37,7 +39,26 @@ namespace graybat {
 
             template <typename T_CommunicationPolicy>
             struct ConfigType;
-            
+
+			template <typename T_RecvType>
+			void unfoldMessage(std::vector<T_RecvType> recvData, std::int8_t* messageData, size_t messageSize) {
+				//This is the specialisation for std::vector. Vector is a dynamic data structure and the
+				//size should be according to the received message. If the vector has the right size in the
+				//beginning the runtimeoverhead is negectable.
+				recvData.resize(messageSize / sizeof(T_RecvType));
+				memcpy (static_cast<void*>(recvData.data()),
+                        messageData,
+                        sizeof(T_RecvType) * recvData.size());
+			}
+			
+			template <typename T_RecvType>
+			void unfoldMessage(T_RecvType recvData, std::int8_t* messageData, size_t messageSize) {
+				//This is the standard behaviour in the old api
+				//I think it is not smart, but that is another discussion
+				memcpy (static_cast<void*>(recvData.data()),
+                        messageData,
+                        recvData.size());
+			}
         } // namespace traits
 
         template <typename T_CommunicationPolicy>        
