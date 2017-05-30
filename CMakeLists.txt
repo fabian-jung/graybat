@@ -111,7 +111,7 @@ foreach(EXAMPLE ${EXAMPLES})
 	add_executable(${DEP} EXCLUDE_FROM_ALL ${EXAMPLE})
     set_property(TARGET ${DEP} PROPERTY CXX_STANDARD 14)
 	target_link_libraries(${DEP} LINK_INTERFACE_LIBRARIES graybat)
-	target_link_libraries(${DEP} ${LIBS})
+	target_link_libraries(${DEP} ${LIBS})	
 	add_dependencies(example ${DEP})
 endforeach(EXAMPLE)
 
