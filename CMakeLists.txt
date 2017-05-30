@@ -79,7 +79,6 @@ if(CCACHE_FOUND)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif(CCACHE_FOUND)
 
-
 ###############################################################################
 # Targets
 ###############################################################################
@@ -90,8 +89,8 @@ add_executable(benchmark EXCLUDE_FROM_ALL ${BENCHMARKS} ${graybat_GENERATED_FILE
 target_link_libraries(benchmark ${LIBS})
 
 # Test cases
-file(GLOB INTEGRATION_TESTS test/integration/*.cpp)
-add_executable(check EXCLUDE_FROM_ALL ${INTEGRATION_TESTS} ${graybat_GENERATED_FILES})
+file(GLOB TESTS test/integration/*.cpp)
+add_executable(check EXCLUDE_FROM_ALL ${TESTS})
 target_link_libraries(check ${LIBS})
 
 file(GLOB UNIT_TESTS test/unit/main.cpp test/unit/*Tests.cpp)
@@ -99,8 +98,8 @@ add_executable(unit_tests EXCLUDE_FROM_ALL ${UNIT_TESTS} ${graybat_GENERATED_FIL
 target_link_libraries(unit_tests ${LIBS})
 
 # Fast testing
-file(GLOB TESTSFAST test/integration/main.cpp test/unit/ThreadPoolTests.cpp)
-add_executable(checkFast EXCLUDE_FROM_ALL ${TESTSFAST} ${graybat_GENERATED_FILES})
+file(GLOB TESTSFAST test/integration/main.cpp test/integration/CommunicationPolicyTests.cpp)
+add_executable(checkFast EXCLUDE_FROM_ALL ${TESTSFAST})
 set_property(TARGET checkFast PROPERTY CXX_STANDARD 14)
 target_link_libraries(checkFast ${LIBS})
 
@@ -109,17 +108,17 @@ add_custom_target(example)
 file(GLOB EXAMPLES  example/*.cpp)
 foreach(EXAMPLE ${EXAMPLES})
 	get_filename_component(DEP ${EXAMPLE} NAME_WE)
-	add_executable(${DEP} EXCLUDE_FROM_ALL ${EXAMPLE} ${graybat_GENERATED_FILES})
+	add_executable(${DEP} EXCLUDE_FROM_ALL ${EXAMPLE})
     set_property(TARGET ${DEP} PROPERTY CXX_STANDARD 14)
 	target_link_libraries(${DEP} LINK_INTERFACE_LIBRARIES graybat)
 	target_link_libraries(${DEP} ${LIBS})
 	add_dependencies(example ${DEP})
 endforeach(EXAMPLE)
 
-# GRPC signaling server
-add_executable( signaling EXCLUDE_FROM_ALL utils/signaling_server.cpp ${graybat_GENERATED_FILES})
-set_property(TARGET signaling PROPERTY CXX_STANDARD 11)
-target_link_libraries(signaling ${LIBS})
+# ZMQ signaling server
+add_executable(gbZMQSignaling EXCLUDE_FROM_ALL utils/zmq_signaling_server.cpp )
+set_property(TARGET gbZMQSignaling PROPERTY CXX_STANDARD 11)
+target_link_libraries(gbZMQSignaling ${LIBS})
 
 # CTest
 enable_testing()
@@ -148,7 +147,7 @@ install(
   DESTINATION "lib/graybat"
 )
 
-install( TARGETS signaling
+install( TARGETS gbZMQSignaling
           RUNTIME DESTINATION "bin"
         )
 
@@ -156,7 +155,7 @@ install( TARGETS signaling
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen.conf ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-  add_custom_target(doc 
+  add_custom_target(doc
     COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     SOURCES ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
