@@ -43,7 +43,6 @@
 #include <graybat/communicationPolicy/zmq/Event.hpp> /* Event */
 #include <graybat/communicationPolicy/zmq/Message.hpp> /* Message */
 #include <graybat/communicationPolicy/zmq/Status.hpp> /* Event */
-
 namespace graybat {
 namespace communicationPolicy {
 
@@ -130,9 +129,19 @@ struct ZMQ : public graybat::communicationPolicy::socket::Base<ZMQ> {
         ctrlSocket(zmqContext, ZMQ_PULL), signalingSocket(zmqContext, ZMQ_REQ),
         peerUri(bindToNextFreePort(recvSocket, config.peerUri)),
         ctrlUri(bindToNextFreePort(ctrlSocket, config.peerUri)) {
-
     // std::cout << "PeerUri: " << peerUri << std::endl;
-    SocketBase::init();
+
+	try {
+		recvSocket.setsockopt(ZMQ_RCVTIMEO, &config.recvTimeout, sizeof(config.recvTimeout));
+		recvSocket.setsockopt(ZMQ_SNDTIMEO, &config.sendTimeout, sizeof(config.sendTimeout));
+		ctrlSocket.setsockopt(ZMQ_RCVTIMEO, &config.recvTimeout, sizeof(config.recvTimeout));
+		ctrlSocket.setsockopt(ZMQ_SNDTIMEO, &config.sendTimeout, sizeof(config.sendTimeout));
+	} catch(std::exception e) {
+		std::cerr << "Could not set socket options." << std::endl;
+		std::cerr << e.what() << std::endl;
+	}
+
+	SocketBase::init();
   }
 
   // Copy constructor
@@ -186,8 +195,8 @@ struct ZMQ : public graybat::communicationPolicy::socket::Base<ZMQ> {
     ::zmq::message_t message(sizeof(char) * string.size());
     memcpy(static_cast<char *>(message.data()), string.data(),
            sizeof(char) * string.size());
-    socket.send(message);
-  }
+	socket.send(message);
+	}
 
   template <typename T_Socket>
   void sendToSocket(T_Socket &socket, ::zmq::message_t &data) {

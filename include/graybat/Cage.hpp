@@ -133,6 +133,7 @@ struct Cage {
     // Destructor
     ~Cage()
     { /* std::cout << "Destruct Cage" << std::endl */
+		threadPool = nullptr;
     }
 
     /***********************************************************************/ /**
@@ -806,7 +807,7 @@ auto Cage<T_CommunicationPolicy, T_GraphPolicy, SerializationPolicy>::asyncRecv(
     const Edge& edge, T& data) -> std::future<void>
 {
     auto dataReceived = std::make_shared<std::promise<void>>();
-    threadPool->post([this, edge, &data, dataReceived]() { asyncRecv_(edge, data, dataReceived); });
+    if(threadPool) threadPool->post([this, edge, &data, dataReceived]() { asyncRecv_(edge, data, dataReceived); });
     return dataReceived->get_future();
 }
 
@@ -823,7 +824,7 @@ auto Cage<T_CommunicationPolicy, T_GraphPolicy, SerializationPolicy>::asyncRecv_
         SerializationPolicy::restore(data, skeleton);
         dataReceived->set_value();
     } else {
-        threadPool->post([this, edge, &data, dataReceived]() { asyncRecv_(edge, data, dataReceived); });
+        if(threadPool) threadPool->post([this, edge, &data, dataReceived]() { asyncRecv_(edge, data, dataReceived); });
     }
 }
 
@@ -834,7 +835,7 @@ auto Cage<T_CommunicationPolicy, T_GraphPolicy, SerializationPolicy>::asyncRecv(
     T& data) -> std::future<Edge>
 {
     auto dataReceived = std::make_shared<std::promise<Edge>>();
-    threadPool->post([this, &data, dataReceived]() { asyncRecv_(data, dataReceived); });
+    if(threadPool) threadPool->post([this, &data, dataReceived]() { asyncRecv_(data, dataReceived); });
     return dataReceived->get_future();
 }
 
@@ -857,7 +858,7 @@ auto Cage<T_CommunicationPolicy, T_GraphPolicy, SerializationPolicy>::asyncRecv_
 			}
 		}
 	}
-	threadPool->post([this, &data, dataReceived]() { asyncRecv_(data, dataReceived); });
+	if(threadPool) threadPool->post([this, &data, dataReceived]() { asyncRecv_(data, dataReceived); });
 }
 
 //!

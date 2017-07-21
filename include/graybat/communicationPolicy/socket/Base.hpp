@@ -50,6 +50,12 @@ namespace graybat {
 
         namespace socket {
 
+			enum class State {
+				preinit,
+				init,
+				deinit
+			};
+
             template <typename T_CommunicationPolicy>
             struct Base : graybat::communicationPolicy::Base<T_CommunicationPolicy>{
 
@@ -70,6 +76,7 @@ namespace graybat {
                 using ContextName         = graybat::communicationPolicy::socket::ContextName<CommunicationPolicy>;
 
                 // Members
+				State state;
                 const Uri masterUri;
                 const size_t contextSize;
                 const ContextName contextName;
@@ -257,6 +264,7 @@ namespace graybat {
 
             template <typename T_CommunicationPolicy>
             Base<T_CommunicationPolicy>::Base(Config const config)  :
+					state(State::preinit),
                     masterUri(config.masterUri),
                     contextSize(config.contextSize),
                     contextName(config.contextName),
@@ -315,21 +323,21 @@ namespace graybat {
                 // Create thread which recv all messages to this peer
                 recvHandler = std::thread(&Base<CommunicationPolicy>::handleRecv, this);
                 ctrlHandler = std::thread(&Base<CommunicationPolicy>::handleCtrl, this);
-
+				state = State::init;
             }
 
             template <typename T_CommunicationPolicy>
             auto Base<T_CommunicationPolicy>::deinit()
             -> void {
-                std::stringstream ss;
+				state = State::deinit;
+				std::stringstream ss;
                 ss << static_cast<size_t>(MsgType::DESTRUCT) << " " << contextName;
                 static_cast<CommunicationPolicy*>(this)->sendToSocket(static_cast<CommunicationPolicy*>(this)->signalingSocket, ss);
 
                 std::array<unsigned, 1>  null;
                 static_cast<CommunicationPolicy*>(this)->asyncSendImpl(MsgType::DESTRUCT, 0, initialContext, initialContext.getVAddr(), 0, null);
-                recvHandler.join();
-                ctrlHandler.join();
-
+				recvHandler.detach();
+                ctrlHandler.detach();
             }
 
             template <typename T_CommunicationPolicy>
@@ -813,8 +821,12 @@ namespace graybat {
                 while(true){
 
                     Message message;
-                    static_cast<CommunicationPolicy*>(this)->recvFromSocket(static_cast<CommunicationPolicy*>(this)->recvSocket, message);
 
+					try {
+						static_cast<CommunicationPolicy*>(this)->recvFromSocket(static_cast<CommunicationPolicy*>(this)->recvSocket, message);
+					} catch(std::exception e) {
+						return;
+					}
                     //std::cout << "recv handler: " << static_cast<int>(message.getMsgType()) << " " << message.getMsgID() << " " << message.getContextID() << " " << message.getVAddr() << " " << message.getTag() << std::endl;
 
                     if(message.getMsgType() == MsgType::DESTRUCT){
@@ -843,8 +855,11 @@ namespace graybat {
                 while(true){
 
                     Message message;
-                    static_cast<CommunicationPolicy*>(this)->recvFromSocket(static_cast<CommunicationPolicy*>(this)->ctrlSocket, message);
-
+					try {
+						static_cast<CommunicationPolicy*>(this)->recvFromSocket(static_cast<CommunicationPolicy*>(this)->ctrlSocket, message);
+					} catch(std::exception e) {
+						return;
+					}
                     //std::cout << "recv handler: " << static_cast<int>(message.getMsgType()) << " " << message.getMsgID() << " " << message.getContextID() << " " << message.getVAddr() << " " << message.getTag() << std::endl;
 
                     if(message.getMsgType() == MsgType::DESTRUCT){
@@ -856,7 +871,8 @@ namespace graybat {
                     }
                     else {
                         // Throw exception
-                        throw std::runtime_error("Received wrong message type on ctrl socket (not confirm).");
+						return;
+						//throw std::runtime_error("Received wrong message type on ctrl socket (not confirm).");
                     }
 
                 }

@@ -22,6 +22,7 @@
 
 // STL
 #include <memory> /* std::unique_ptr */
+#include <stdexcept>
 
 // graybat
 #include <graybat/communicationPolicy/Traits.hpp>
@@ -31,6 +32,13 @@ namespace graybat {
     namespace communicationPolicy {
 
         namespace zmq {
+
+			struct WaitAfterDeinit : public std::runtime_error
+			{
+				WaitAfterDeinit() :
+					std::runtime_error("A call of wait() is running, after the communictation policy is deinitialised.")
+				{};
+			};
 
             /**
              * @brief An event is returned by non-blocking
@@ -79,7 +87,12 @@ namespace graybat {
                 Event& operator=(const Event&) = default;
 
                 void wait(){
-                    while(!ready());
+                    while(!ready()) {
+						if(comm->state == socket::State::deinit) {
+							std::cerr << "Error: Wait after deint!!!" << std::endl;
+							throw WaitAfterDeinit();
+						}
+					};
 
                 }
 

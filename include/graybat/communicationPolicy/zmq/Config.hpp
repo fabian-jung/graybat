@@ -21,9 +21,9 @@
 #pragma once
 
 namespace graybat {
-    
+
     namespace communicationPolicy {
-    
+
         namespace zmq {
 
             struct Config {
@@ -33,10 +33,12 @@ namespace graybat {
                 size_t contextSize;
                 std::string contextName = "context";
                 size_t maxBufferSize = 100 * 1000 * 1000;
+				int recvTimeout = -1;
+				int sendTimeout = -1;
             };
 
         } // zmq
-        
+
     } // namespace communicationPolicy
-	
+
 } // namespace graybat
